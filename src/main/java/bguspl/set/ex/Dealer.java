@@ -2,6 +2,8 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -77,6 +79,7 @@ public class Dealer implements Runnable {
      */
     public void terminate() {
         // TODO implement
+        this.terminate = true;
     }
 
     /**
@@ -93,6 +96,33 @@ public class Dealer implements Runnable {
      */
     private void removeCardsFromTable() {
         // TODO implement
+        /**IF it is a SET - > remove cards
+        */
+        LinkedList<Integer>[] playerTokens = this.table.playersTokens;
+        //convert tokens choices to cards
+        for (int i = 0; i <playerTokens.length;i++)
+            if (playerTokens[i].size() == 3) {
+                LinkedList<Integer> slots = playerTokens[i];
+                int playerWith3Tokens = i;
+
+                int[] cards = {table.convertToCard(slots.get(0)), table.convertToCard(slots.get(1))
+                        ,table.convertToCard(slots.get(2))};
+
+                boolean isASet = env.util.testSet(cards);
+                if (isASet) {
+                    this.players[playerWith3Tokens].point();
+                    this.table.removeCard(slots.get(0));
+                    this.table.removeCard(slots.get(1));
+                    this.table.removeCard(slots.get(2));
+                }
+
+                else {
+                    this.players[playerWith3Tokens].penalty();
+                    this.table.clearAllTokensPenalty(playerWith3Tokens);
+                }
+
+
+            }
     }
 
     /**
@@ -100,6 +130,28 @@ public class Dealer implements Runnable {
      */
     private void placeCardsOnTable() {
         // TODO implement
+
+        //Unites table cards with deck
+        List<Integer> allCardsRemain = new LinkedList<Integer>(deck);
+        for (int i = 0; i < table.slotToCard.length; i++) {
+            if (this.table.slotToCard[i]!= null)
+                allCardsRemain.add(this.table.slotToCard[i]);
+        }
+
+        //checks if any set left in the game
+        if (env.util.findSets(allCardsRemain, 1).size() == 0)
+            terminate();
+
+        else {
+            //place the remaining card from the deck to the table
+            Collections.shuffle(deck);
+            for (int i = 0; i < table.slotToCard.length; i++) {
+                if (this.table.slotToCard[i] == null) {
+                    int card = deck.remove(0);
+                    this.table.placeCard(card, i);
+                }
+            }
+        }
     }
 
     /**
@@ -114,6 +166,7 @@ public class Dealer implements Runnable {
      */
     private void updateTimerDisplay(boolean reset) {
         // TODO implement
+
     }
 
     /**
@@ -121,6 +174,8 @@ public class Dealer implements Runnable {
      */
     private void removeAllCardsFromTable() {
         // TODO implement
+        for (int i = 0; i < this.table.slotToCard.length; i++)
+            this.table.removeCard(i);
     }
 
     /**
@@ -128,5 +183,14 @@ public class Dealer implements Runnable {
      */
     private void announceWinners() {
         // TODO implement
+        int[] winners={0};
+         if (players[0].score() < players[1].score()) {
+            winners[0]=1;
+        }
+        else if (players[0].score() == players[1].score()){
+            int[] array = {0,1};
+            winners = array;
+        }
+        env.ui.announceWinner(winners);
     }
 }
