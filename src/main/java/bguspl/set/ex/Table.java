@@ -3,6 +3,7 @@ package bguspl.set.ex;
 import bguspl.set.Env;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -30,6 +31,11 @@ public class Table {
     protected final Integer[] cardToSlot; // slot per card (if any)
 
     /**
+     * Array that represents Players's token choices
+     */
+    protected LinkedList<Integer>[] playersTokens;
+
+    /**
      * Constructor for testing.
      *
      * @param env        - the game environment objects.
@@ -41,11 +47,13 @@ public class Table {
         this.env = env;
         this.slotToCard = slotToCard;
         this.cardToSlot = cardToSlot;
+        this.playersTokens = new LinkedList[2];
+        this.playersTokens[0] = new LinkedList<Integer>();
+        this.playersTokens[1] = new LinkedList<Integer>();
     }
 
     /**
      * Constructor for actual usage.
-     *
      * @param env - the game environment objects.
      */
     public Table(Env env) {
@@ -95,6 +103,7 @@ public class Table {
         slotToCard[slot] = card;
 
         // TODO implement
+
     }
 
     /**
@@ -107,6 +116,14 @@ public class Table {
         } catch (InterruptedException ignored) {}
 
         // TODO implement
+        playersTokens[0].remove((Integer) slot);
+        playersTokens[1].remove((Integer) slot);
+        int card = slotToCard[slot];
+        cardToSlot[card] = null;
+        slotToCard[slot] = null;
+
+
+
     }
 
     /**
@@ -116,6 +133,8 @@ public class Table {
      */
     public void placeToken(int player, int slot) {
         // TODO implement
+        if (!playersTokens[player].contains((Integer) slot))
+            playersTokens[player].add(slot);
     }
 
     /**
@@ -126,6 +145,41 @@ public class Table {
      */
     public boolean removeToken(int player, int slot) {
         // TODO implement
-        return false;
+        if (!playersTokens[player].contains((Integer) slot))
+            return false;
+
+        playersTokens[player].remove((Integer)slot);
+        return true;
+
     }
+
+    /**
+     * Convert slot to a card
+     * @param slot - the slot we want to convert
+     * @return - int, the related card
+     *assumes slot is legal
+     */
+    public int convertToCard(int slot)
+    {
+        return  slotToCard[slot];
+    }
+
+    /**
+     * Clear player's tokens list
+     * @param player - int, the player that got a penalty
+     */
+    public void clearAllTokensPenalty(int player)
+    {
+        playersTokens[player].clear();
+    }
+
+    /**
+     * The function returns the token choices of the players
+     */
+    public LinkedList<Integer>[] GetPlayerTokens()
+    {
+        return playersTokens;
+    }
+
 }
+
