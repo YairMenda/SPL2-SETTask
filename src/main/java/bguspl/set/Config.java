@@ -16,6 +16,10 @@ import java.util.logging.Logger;
 public class Config {
 
     /**
+     * Amount of cards that makes a set
+     */
+    public final int SetSize = 3;
+    /**
      * Random spin cycles for Config::randomSpin (for debugging / testing)
      */
     public final long randomSpinMin;

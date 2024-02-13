@@ -2,6 +2,9 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
+import java.util.PriorityQueue;
+import java.util.Queue;
+
 /**
  * This class manages the players' threads and data
  *
@@ -51,6 +54,12 @@ public class Player implements Runnable {
     private int score;
 
     /**
+     * The incoming actions of the player
+     */
+    private Queue<Integer> actions;
+
+
+    /**
      * The class constructor.
      *
      * @param env    - the environment object.
@@ -64,6 +73,7 @@ public class Player implements Runnable {
         this.table = table;
         this.id = id;
         this.human = human;
+        this.actions = new PriorityQueue<Integer>();
     }
 
     /**
@@ -76,7 +86,9 @@ public class Player implements Runnable {
         if (!human) createArtificialIntelligence();
 
         while (!terminate) {
-            // TODO implement main player loop
+            while (!actions.isEmpty())
+                this.table.actionToToken(id,actions.remove());
+
         }
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
@@ -92,6 +104,7 @@ public class Player implements Runnable {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
             while (!terminate) {
                 // TODO implement player key press simulator
+
                 try {
                     synchronized (this) { wait(); }
                 } catch (InterruptedException ignored) {}
@@ -105,7 +118,7 @@ public class Player implements Runnable {
      * Called when the game should be terminated.
      */
     public void terminate() {
-        // TODO implement
+        terminate = true;
     }
 
     /**
@@ -114,7 +127,8 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        // TODO implement
+        if (actions.size() < 3)
+            actions.add(slot);
     }
 
     /**
@@ -126,8 +140,16 @@ public class Player implements Runnable {
     public void point() {
         // TODO implement
 
-        int ignored = table.countCards(); // this part is just for demonstration in the unit tests
-        env.ui.setScore(id, ++score);
+        //int ignored = table.countCards(); // this part is just for demonstration in the unit tests
+
+        this.score++;
+        env.ui.setScore(id, score);
+
+        try{
+            playerThread.sleep(env.config.pointFreezeMillis);
+        } catch (InterruptedException ignored) {}
+
+        env.ui.setFreeze(id,env.config.pointFreezeMillis);
     }
 
     /**
@@ -135,9 +157,16 @@ public class Player implements Runnable {
      */
     public void penalty() {
         // TODO implement
+        try{
+            playerThread.sleep(env.config.penaltyFreezeMillis);
+        } catch (InterruptedException ignored) {}
+
+        env.ui.setFreeze(id,env.config.penaltyFreezeMillis);
     }
 
     public int score() {
         return score;
     }
+
+
 }
