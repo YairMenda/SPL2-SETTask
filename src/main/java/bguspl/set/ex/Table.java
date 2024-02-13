@@ -35,6 +35,13 @@ public class Table {
      */
     protected LinkedList<Integer>[] playersTokens;
 
+
+    /**
+     *
+     */
+
+    private  NotifyDealer nd;
+
     /**
      * Constructor for testing.
      *
@@ -47,9 +54,10 @@ public class Table {
         this.env = env;
         this.slotToCard = slotToCard;
         this.cardToSlot = cardToSlot;
-        this.playersTokens = new LinkedList[2];
-        this.playersTokens[0] = new LinkedList<Integer>();
-        this.playersTokens[1] = new LinkedList<Integer>();
+        this.playersTokens = new LinkedList[env.config.players];
+        for (int i = 0; i < playersTokens.length; i++) {
+            this.playersTokens[i] = new LinkedList<Integer>();
+        }
     }
 
     /**
@@ -94,7 +102,7 @@ public class Table {
      *
      * @post - the card placed is on the table, in the assigned slot.
      */
-    public void placeCard(int card, int slot) {
+    public synchronized void placeCard(int card, int slot) {
         try {
             Thread.sleep(env.config.tableDelayMillis);
         } catch (InterruptedException ignored) {}
@@ -103,26 +111,29 @@ public class Table {
         slotToCard[slot] = card;
 
         // TODO implement
-
+        env.ui.placeCard(card,slot);
     }
 
     /**
      * Removes a card from a grid slot on the table.
      * @param slot - the slot from which to remove the card.
      */
-    public void removeCard(int slot) {
+    public synchronized void removeCard(int slot) {
         try {
             Thread.sleep(env.config.tableDelayMillis);
         } catch (InterruptedException ignored) {}
 
         // TODO implement
-        playersTokens[0].remove((Integer) slot);
-        playersTokens[1].remove((Integer) slot);
+        for (int i = 0; i < playersTokens.length; i++) {
+            playersTokens[i].remove((Integer) slot);
+        }
+        env.ui.removeTokens(slot);
+
         int card = slotToCard[slot];
         cardToSlot[card] = null;
         slotToCard[slot] = null;
 
-
+        env.ui.removeCard(slot);
 
     }
 
@@ -133,8 +144,16 @@ public class Table {
      */
     public void placeToken(int player, int slot) {
         // TODO implement
-        if (!playersTokens[player].contains((Integer) slot))
+        if (playersTokens[player].size() < 3) {
             playersTokens[player].add(slot);
+            env.ui.placeToken(player, slot);
+        }
+
+        //how to notify dealer
+        if (tokenAmountForSet(player)) {
+            nd.notifyDealer(player);
+            //notify();
+        }
     }
 
     /**
@@ -145,10 +164,8 @@ public class Table {
      */
     public boolean removeToken(int player, int slot) {
         // TODO implement
-        if (!playersTokens[player].contains((Integer) slot))
-            return false;
-
         playersTokens[player].remove((Integer)slot);
+        env.ui.removeToken(player,slot);
         return true;
 
     }
@@ -170,6 +187,9 @@ public class Table {
      */
     public void clearAllTokensPenalty(int player)
     {
+        for (Integer slot: playersTokens[player]) {
+            env.ui.removeToken(player,slot);
+        }
         playersTokens[player].clear();
     }
 
@@ -180,6 +200,21 @@ public class Table {
     {
         return playersTokens;
     }
+    public boolean tokenAmountForSet(int player){return playersTokens[player].size() == env.config.SetSize;}
 
+    //??synchronized
+    public void actionToToken(int player,int slot)
+    {
+        if (playersTokens[player].contains(slot))
+            removeToken(player,slot);
+        else
+            placeToken(player,slot);
+
+    }
+
+    public void setNotifyDealer(NotifyDealer nd)
+    {
+        this.nd = nd;
+    }
 }
 

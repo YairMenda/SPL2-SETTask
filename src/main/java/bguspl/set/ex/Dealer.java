@@ -2,9 +2,7 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -35,6 +33,10 @@ public class Dealer implements Runnable {
     private volatile boolean terminate;
 
     /**
+     * Queue of players to be checked by the dealer for possible set
+     */
+    private Queue<Integer> checkedList;
+    /**
      * The time when the dealer needs to reshuffle the deck due to turn timeout.
      */
     private long reshuffleTime = Long.MAX_VALUE;
@@ -44,6 +46,8 @@ public class Dealer implements Runnable {
         this.table = table;
         this.players = players;
         deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
+        checkedList = new PriorityQueue<Integer>();
+        this.table.setNotifyDealer((i)-> checkedList.add(i));
     }
 
     /**
@@ -54,6 +58,12 @@ public class Dealer implements Runnable {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
         while (!shouldFinish()) {
             placeCardsOnTable();
+            for ( int i = 0; i < players.length;i++) {
+                Player p = players[i];
+                Thread player = new Thread(p);
+                player.start();
+            }
+            updateTimerDisplay(true);
             timerLoop();
             updateTimerDisplay(false);
             removeAllCardsFromTable();
@@ -100,27 +110,35 @@ public class Dealer implements Runnable {
         */
         LinkedList<Integer>[] playerTokens = this.table.playersTokens;
         //convert tokens choices to cards
-        for (int i = 0; i <playerTokens.length;i++)
-            if (playerTokens[i].size() == 3) {
-                LinkedList<Integer> slots = playerTokens[i];
-                int playerWith3Tokens = i;
+        for (Integer i : checkedList) {
+            if (playerTokens[i].size() == env.config.SetSize)
+            {
+                LinkedList<Integer> tokens = playerTokens[i];
 
-                int[] cards = {table.convertToCard(slots.get(0)), table.convertToCard(slots.get(1))
-                        ,table.convertToCard(slots.get(2))};
+                int[] cards = new int[env.config.SetSize];
+                int j = 0;
+                for (Integer slot : tokens)
+                {
+                    cards[j] = table.convertToCard(slot);
+                    j++;
+                }
 
                 boolean isASet = env.util.testSet(cards);
+
                 if (isASet) {
-                    this.players[playerWith3Tokens].point();
-                    this.table.removeCard(slots.get(0));
-                    this.table.removeCard(slots.get(1));
-                    this.table.removeCard(slots.get(2));
+                    this.players[i].point();
+                    for (Integer slot : tokens) {
+                        this.table.removeCard(slot);
+                    }
+                    updateTimerDisplay(true);
                 }
+            }
 
                 else {
-                    this.players[playerWith3Tokens].penalty();
-                    this.table.clearAllTokensPenalty(playerWith3Tokens);
+                    this.players[i].penalty();
+                    this.table.clearAllTokensPenalty(i);
                 }
-
+                checkedList.remove(i);
 
             }
     }
@@ -130,19 +148,6 @@ public class Dealer implements Runnable {
      */
     private void placeCardsOnTable() {
         // TODO implement
-
-        //Unites table cards with deck
-        List<Integer> allCardsRemain = new LinkedList<Integer>(deck);
-        for (int i = 0; i < table.slotToCard.length; i++) {
-            if (this.table.slotToCard[i]!= null)
-                allCardsRemain.add(this.table.slotToCard[i]);
-        }
-
-        //checks if any set left in the game
-        if (env.util.findSets(allCardsRemain, 1).size() == 0)
-            terminate();
-
-        else {
             //place the remaining card from the deck to the table
             Collections.shuffle(deck);
             for (int i = 0; i < table.slotToCard.length; i++) {
@@ -152,21 +157,27 @@ public class Dealer implements Runnable {
                 }
             }
         }
-    }
+
 
     /**
      * Sleep for a fixed amount of time or until the thread is awakened for some purpose.
      */
     private void sleepUntilWokenOrTimeout() {
         // TODO implement
+                try {
+                    Thread.sleep(env.config.turnTimeoutMillis);
+                } catch (InterruptedException ignored) {
+                }
     }
-
     /**
      * Reset and/or update the countdown and the countdown display.
      */
     private void updateTimerDisplay(boolean reset) {
         // TODO implement
+        if (reset)
+            env.ui.setCountdown(env.config.turnTimeoutMillis,false);
 
+        //env.ui.
     }
 
     /**
@@ -176,6 +187,7 @@ public class Dealer implements Runnable {
         // TODO implement
         for (int i = 0; i < this.table.slotToCard.length; i++)
             this.table.removeCard(i);
+        updateTimerDisplay(true);
     }
 
     /**
@@ -183,14 +195,22 @@ public class Dealer implements Runnable {
      */
     private void announceWinners() {
         // TODO implement
-        int[] winners={0};
-         if (players[0].score() < players[1].score()) {
-            winners[0]=1;
+        LinkedList<Integer> winners = new LinkedList<Integer>();
+        int maxScore = 0;
+        for (int i=0; i < players.length; i++){
+            if (players[i].score() > maxScore)
+                maxScore = players[i].score();
         }
-        else if (players[0].score() == players[1].score()){
-            int[] array = {0,1};
-            winners = array;
+        for (int i=0; i < players.length; i++){
+            if (players[i].score() == maxScore)
+                winners.add(players[i].id);
         }
-        env.ui.announceWinner(winners);
+        int[] arr = new int[winners.size()];
+        for (int i=0; i < arr.length; i++)
+            arr[i] = (int) winners.get(i);
+
+
+        env.ui.announceWinner(arr);
     }
+
 }
