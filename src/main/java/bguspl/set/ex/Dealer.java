@@ -33,21 +33,27 @@ public class Dealer implements Runnable {
     private volatile boolean terminate;
 
     /**
-     * Queue of players to be checked by the dealer for possible set
+     * Timer entitiy
      */
-    private Queue<Integer> checkedList;
+
+    private Timer timer;
     /**
      * The time when the dealer needs to reshuffle the deck due to turn timeout.
      */
     private long reshuffleTime = Long.MAX_VALUE;
+
+
 
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
         this.table = table;
         this.players = players;
         deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
-        checkedList = new PriorityQueue<Integer>();
-        this.table.setNotifyDealer((i)-> checkedList.add(i));
+        this.timer = new Timer(env.config.turnTimeoutMillis,this.env,table);
+
+
+        //checkedList = new PriorityQueue<Integer>();
+        //this.table.setNotifyDealer((i)-> checkedList.add(i));
     }
 
     /**
@@ -56,13 +62,19 @@ public class Dealer implements Runnable {
     @Override
     public void run() {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+
+        for ( int i = 0; i < players.length;i++) {
+            Player p = players[i];
+            Thread player = new Thread(p);
+            player.start();
+        }
+
         while (!shouldFinish()) {
             placeCardsOnTable();
-            for ( int i = 0; i < players.length;i++) {
-                Player p = players[i];
-                Thread player = new Thread(p);
-                player.start();
-            }
+
+            Thread maintimer = new Thread(this.timer);
+            maintimer.start();
+
             updateTimerDisplay(true);
             timerLoop();
             updateTimerDisplay(false);
@@ -76,7 +88,7 @@ public class Dealer implements Runnable {
      * The inner loop of the dealer thread that runs as long as the countdown did not time out.
      */
     private void timerLoop() {
-        while (!terminate && System.currentTimeMillis() < reshuffleTime) {
+        while (!terminate && System.currentTimeMillis() < reshuffleTime && !(this.table.timeout) ) {
             sleepUntilWokenOrTimeout();
             updateTimerDisplay(false);
             removeCardsFromTable();
@@ -107,40 +119,38 @@ public class Dealer implements Runnable {
     private void removeCardsFromTable() {
         // TODO implement
         /**IF it is a SET - > remove cards
-        */
+         */
         LinkedList<Integer>[] playerTokens = this.table.playersTokens;
         //convert tokens choices to cards
-        for (Integer i : checkedList) {
-            if (playerTokens[i].size() == env.config.SetSize)
-            {
-                LinkedList<Integer> tokens = playerTokens[i];
+        while (!table.checkedList.isEmpty()) {
+            int playerIndex = table.checkedList.remove();
+            LinkedList<Integer> tokens = new LinkedList<Integer>(playerTokens[playerIndex]);
 
-                int[] cards = new int[env.config.SetSize];
-                int j = 0;
-                for (Integer slot : tokens)
-                {
-                    cards[j] = table.convertToCard(slot);
-                    j++;
-                }
-
-                boolean isASet = env.util.testSet(cards);
-
-                if (isASet) {
-                    this.players[i].point();
-                    for (Integer slot : tokens) {
-                        this.table.removeCard(slot);
-                    }
-                    updateTimerDisplay(true);
-                }
+            int[] cards = new int[env.config.SetSize];
+            int j = 0;
+            for (Integer slot : tokens) {
+                cards[j] = table.convertToCard(slot);
+                j++;
             }
 
-                else {
-                    this.players[i].penalty();
-                    this.table.clearAllTokensPenalty(i);
-                }
-                checkedList.remove(i);
+            boolean isASet = env.util.testSet(cards);
 
+            if (isASet) {
+                this.players[playerIndex].point();
+                timer.resetTime();
+                for (Integer slot : tokens) {
+                    this.table.removeCard(slot);
+                }
+
+                updateTimerDisplay(true);
+
+            } else {
+                this.players[playerIndex].penalty();
+                this.table.clearAllTokensPenalty(playerIndex);
             }
+            table.checkedList.remove(playerIndex);
+
+        }
     }
 
     /**
@@ -164,10 +174,7 @@ public class Dealer implements Runnable {
      */
     private void sleepUntilWokenOrTimeout() {
         // TODO implement
-                try {
-                    Thread.sleep(env.config.turnTimeoutMillis);
-                } catch (InterruptedException ignored) {
-                }
+           table.dealerWaits();
     }
     /**
      * Reset and/or update the countdown and the countdown display.
@@ -175,9 +182,7 @@ public class Dealer implements Runnable {
     private void updateTimerDisplay(boolean reset) {
         // TODO implement
         if (reset)
-            env.ui.setCountdown(env.config.turnTimeoutMillis,false);
-
-        //env.ui.
+            this.timer.resetTime();
     }
 
     /**
@@ -212,5 +217,4 @@ public class Dealer implements Runnable {
 
         env.ui.announceWinner(arr);
     }
-
 }

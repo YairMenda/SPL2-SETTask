@@ -210,8 +210,8 @@ public class Config {
         hints = Boolean.parseBoolean(properties.getProperty("Hints", "False"));
         turnTimeoutMillis = (long) (Double.parseDouble(properties.getProperty("TurnTimeoutSeconds", "60")) * 1000.0);
         turnTimeoutWarningMillis = (long) (Double.parseDouble(properties.getProperty("TurnTimeoutWarningSeconds", "60")) * 1000.0);
-        pointFreezeMillis = (long) (Double.parseDouble(properties.getProperty("PointFreezeSeconds", "1")) * 1000.0);
-        penaltyFreezeMillis = (long) (Double.parseDouble(properties.getProperty("PenaltyFreezeSeconds", "3")) * 1000.0);
+        pointFreezeMillis = (long) (Double.parseDouble(properties.getProperty("PointFreezeSeconds", "3")) * 1000.0);
+        penaltyFreezeMillis = (long) (Double.parseDouble(properties.getProperty("PenaltyFreezeSeconds", "5")) * 1000.0);
         tableDelayMillis = (long) (Double.parseDouble(properties.getProperty("TableDelaySeconds", "0.1")) * 1000.0);
         endGamePauseMillies = (long) (Double.parseDouble(properties.getProperty("EndGamePauseSeconds", "5")) * 1000.0);
 
