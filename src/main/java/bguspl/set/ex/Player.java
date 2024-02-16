@@ -127,7 +127,8 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        if (actions.size() < 3)
+        //??not IN Penalty
+        if (actions.size() < env.config.SetSize)
             actions.add(slot);
     }
 
@@ -146,10 +147,10 @@ public class Player implements Runnable {
         env.ui.setScore(id, score);
 
         try{
+            Thread timer = new Thread(new PlayerTimer(id,env.config.pointFreezeMillis,env,this.table));
+            timer.start();
             playerThread.sleep(env.config.pointFreezeMillis);
         } catch (InterruptedException ignored) {}
-
-        env.ui.setFreeze(id,env.config.pointFreezeMillis);
     }
 
     /**
@@ -158,10 +159,11 @@ public class Player implements Runnable {
     public void penalty() {
         // TODO implement
         try{
+            Thread timer = new Thread(new PlayerTimer(id,env.config.penaltyFreezeMillis,env,this.table));
+            timer.start();
             playerThread.sleep(env.config.penaltyFreezeMillis);
         } catch (InterruptedException ignored) {}
 
-        env.ui.setFreeze(id,env.config.penaltyFreezeMillis);
     }
 
     public int score() {

@@ -2,10 +2,7 @@ package bguspl.set.ex;
 
 import bguspl.set.Env;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -35,13 +32,14 @@ public class Table {
      */
     protected LinkedList<Integer>[] playersTokens;
 
-
     /**
-     *
+     * Boolean value - If the dealer needs to wake up anc clear table
      */
-
-    private  NotifyDealer nd;
-
+    public boolean timeout = false;
+    /**
+     * Queue of players to be checked by the dealer for possible set
+     */
+    public Queue<Integer> checkedList;
     /**
      * Constructor for testing.
      *
@@ -58,6 +56,8 @@ public class Table {
         for (int i = 0; i < playersTokens.length; i++) {
             this.playersTokens[i] = new LinkedList<Integer>();
         }
+
+        this.checkedList = new PriorityQueue<Integer>();
     }
 
     /**
@@ -142,17 +142,16 @@ public class Table {
      * @param player - the player the token belongs to.
      * @param slot   - the slot on which to place the token.
      */
-    public void placeToken(int player, int slot) {
+    public synchronized void placeToken(int player, int slot) {
         // TODO implement
         if (playersTokens[player].size() < 3) {
             playersTokens[player].add(slot);
             env.ui.placeToken(player, slot);
         }
 
-        //how to notify dealer
         if (tokenAmountForSet(player)) {
-            nd.notifyDealer(player);
-            //notify();
+            this.checkedList.add(player);
+            notify();
         }
     }
 
@@ -211,10 +210,18 @@ public class Table {
             placeToken(player,slot);
 
     }
-
-    public void setNotifyDealer(NotifyDealer nd)
+    public synchronized void setTimeOut(boolean timeout)
     {
-        this.nd = nd;
+        this.timeout = timeout;
+        notify();
+    }
+    public synchronized void dealerWaits()
+    {
+        while (this.checkedList.isEmpty() & !(this.timeout) )
+            try{
+                wait(env.config.turnTimeoutMillis);
+            }catch (InterruptedException ignored){}
+
     }
 }
 

@@ -39,6 +39,7 @@ public class UtilImpl implements Util {
     }
 
     @Override
+
     public boolean testSet(int[] cards) {
         int[][] features = cardsToFeatures(Arrays.copyOf(cards, cards.length));
         for (int i = 0; i < config.featureCount; ++i) {
