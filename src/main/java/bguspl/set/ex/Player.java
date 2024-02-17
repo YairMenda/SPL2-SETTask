@@ -4,6 +4,7 @@ import bguspl.set.Env;
 
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.Random;
 
 /**
  * This class manages the players' threads and data
@@ -58,7 +59,10 @@ public class Player implements Runnable {
      */
     private Queue<Integer> actions;
 
-
+    /**
+     * Boolean value - If the player is freezed and cannot do anything
+     */
+    private boolean freeze;
     /**
      * The class constructor.
      *
@@ -74,6 +78,7 @@ public class Player implements Runnable {
         this.id = id;
         this.human = human;
         this.actions = new PriorityQueue<Integer>();
+        this.freeze = false;
     }
 
     /**
@@ -85,11 +90,14 @@ public class Player implements Runnable {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
         if (!human) createArtificialIntelligence();
 
-        while (!terminate) {
-            while (!actions.isEmpty())
-                this.table.actionToToken(id,actions.remove());
+        else {
+            while (!terminate) {
+                if (!actions.isEmpty() & !freeze)
+                    this.table.actionToToken(id, actions.remove());
 
+            }
         }
+
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
     }
@@ -102,11 +110,18 @@ public class Player implements Runnable {
         // note: this is a very, very smart AI (!)
         aiThread = new Thread(() -> {
             env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
+            Random rnd = new Random();
+            try{Thread.sleep(3000);}catch (InterruptedException ignored){}
+
             while (!terminate) {
                 // TODO implement player key press simulator
+                int randomKeyPressed = rnd.nextInt(12);
+                keyPressed(randomKeyPressed);
 
+                if (!actions.isEmpty() & !freeze)
+                    this.table.actionToToken(id, actions.remove());
                 try {
-                    synchronized (this) { wait(); }
+                    synchronized (this) { wait(2000); }
                 } catch (InterruptedException ignored) {}
             }
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
@@ -128,7 +143,7 @@ public class Player implements Runnable {
      */
     public void keyPressed(int slot) {
         //??not IN Penalty
-        if (actions.size() < env.config.SetSize)
+        if (actions.size() < env.config.SetSize & !freeze)
             actions.add(slot);
     }
 
@@ -145,12 +160,9 @@ public class Player implements Runnable {
 
         this.score++;
         env.ui.setScore(id, score);
+        Thread timerThread = new Thread(new PlayerTimer(id,env,env.config.pointFreezeMillis,this));
+        timerThread.start();
 
-        try{
-            Thread timer = new Thread(new PlayerTimer(id,env.config.pointFreezeMillis,env,this.table));
-            timer.start();
-            playerThread.sleep(env.config.pointFreezeMillis);
-        } catch (InterruptedException ignored) {}
     }
 
     /**
@@ -158,16 +170,20 @@ public class Player implements Runnable {
      */
     public void penalty() {
         // TODO implement
-        try{
-            Thread timer = new Thread(new PlayerTimer(id,env.config.penaltyFreezeMillis,env,this.table));
-            timer.start();
-            playerThread.sleep(env.config.penaltyFreezeMillis);
-        } catch (InterruptedException ignored) {}
-
+        Thread timerThread = new Thread(new PlayerTimer(id,env,env.config.penaltyFreezeMillis,this));
+        timerThread.start();
     }
 
     public int score() {
         return score;
+    }
+    public void releaseFreeze()
+    {
+        this.freeze = false;
+    }
+    public void freezePlayer()
+    {
+        this.freeze = true;
     }
 
 
