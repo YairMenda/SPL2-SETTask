@@ -20,6 +20,10 @@ public class Dealer implements Runnable {
      * Game entities.
      */
     private final Table table;
+
+    /**
+     *Array of players
+     */
     private final Player[] players;
 
     /**
@@ -43,17 +47,19 @@ public class Dealer implements Runnable {
     private long reshuffleTime = Long.MAX_VALUE;
 
 
-
+    /**
+     * Constructor
+     * @param env
+     * @param table
+     * @param players
+     */
     public Dealer(Env env, Table table, Player[] players) {
         this.env = env;
         this.table = table;
         this.players = players;
-        deck = IntStream.range(0, env.config.deckSize).boxed().collect(Collectors.toList());
+        deck = IntStream.range(0,env.config.deckSize).boxed().collect(Collectors.toList());
         this.timer = new Timer(env.config.turnTimeoutMillis,this.env,table);
 
-
-        //checkedList = new PriorityQueue<Integer>();
-        //this.table.setNotifyDealer((i)-> checkedList.add(i));
     }
 
     /**
@@ -63,15 +69,23 @@ public class Dealer implements Runnable {
     public void run() {
         env.logger.info("thread " + Thread.currentThread().getName() + " starting.");
 
+        // Initiates player threads
         for ( int i = 0; i < players.length;i++) {
             Player p = players[i];
             Thread player = new Thread(p);
             player.start();
         }
 
+        //run until the game is over
         while (!shouldFinish()) {
             placeCardsOnTable();
 
+            //Release players logistic lock
+            for (Player p:players) {
+                p.logisticFreeze(false);
+            }
+
+            //start main countdown timer thread
             Thread maintimer = new Thread(this.timer);
             maintimer.start();
 
@@ -82,6 +96,7 @@ public class Dealer implements Runnable {
         }
         announceWinners();
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
+        //System.out.println("thread " + Thread.currentThread().getName() + "terminated");
     }
 
     /**
@@ -128,18 +143,18 @@ public class Dealer implements Runnable {
         while (!table.checkedList.isEmpty()) {
 
             int playerIndex = table.checkedList.remove();
-            players[playerIndex].freezePlayer();
+            players[playerIndex].freezePlayer(); // lock players -  until the dealer decides -> point / penalty
 
             LinkedList<Integer> tokens = new LinkedList<Integer>(playerTokens[playerIndex]);
 
-            int[] cards = new int[env.config.SetSize];
+            int[] cards = new int[this.table.SetSize];
             int j = 0;
             for (Integer slot : tokens) {
                 cards[j] = table.convertToCard(slot);
                 j++;
             }
 
-            boolean isASet = env.util.testSet(cards);
+            boolean isASet = env.util.testSet(cards); // check if player choice is a set
 
             if (isASet) {
                 this.players[playerIndex].point();
@@ -154,7 +169,7 @@ public class Dealer implements Runnable {
                 this.table.clearAllTokensPenalty(playerIndex);
 
             }
-            table.checkedList.remove(playerIndex);
+            table.checkedList.remove(playerIndex);//remove player from the need to be checked list
 
         }
     }
@@ -164,21 +179,18 @@ public class Dealer implements Runnable {
      */
     private void placeCardsOnTable() {
         // TODO implement
-            //place the remaining card from the deck to the table
-            Collections.shuffle(deck);
-        for (Player p:players) {
-            p.freezePlayer();
-        }
+
+        //place the remaining card from the deck to the table
+
+        Collections.shuffle(deck);//reshuffle
+
             for (int i = 0; i < table.slotToCard.length; i++) {
-                if (this.table.slotToCard[i] == null) {
+                if (this.table.slotToCard[i] == null & deck.size() >= 1) {
                     int card = deck.remove(0);
                     this.table.placeCard(card, i);
                 }
             }
 
-        for (Player p:players) {
-            p.releaseFreeze();
-        }
     }
 
 
@@ -194,6 +206,8 @@ public class Dealer implements Runnable {
      */
     private void updateTimerDisplay(boolean reset) {
         // TODO implement
+
+        //reset main countdown timer
         if (reset)
             this.timer.resetTime();
     }
@@ -205,16 +219,14 @@ public class Dealer implements Runnable {
         // TODO implement
 
         for (Player p:players) {
-            p.freezePlayer();
+            p.logisticFreeze(true); // lock players while removing all cards
         }
 
+        //removing all cards from table
         for (int i = 0; i < this.table.slotToCard.length; i++)
             this.table.removeCard(i);
         updateTimerDisplay(true);
 
-        for (Player p:players) {
-            p.releaseFreeze();
-        }
     }
 
     /**
@@ -222,6 +234,9 @@ public class Dealer implements Runnable {
      */
     private void announceWinners() {
         // TODO implement
+
+        //creates array of winners
+
         LinkedList<Integer> winners = new LinkedList<Integer>();
         int maxScore = 0;
         for (int i=0; i < players.length; i++){
@@ -236,6 +251,7 @@ public class Dealer implements Runnable {
         for (int i=0; i < arr.length; i++)
             arr[i] = (int) winners.get(i);
 
+        terminate();// terminate all threads
 
         env.ui.announceWinner(arr);
     }

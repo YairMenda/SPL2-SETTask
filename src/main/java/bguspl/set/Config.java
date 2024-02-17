@@ -16,10 +16,6 @@ import java.util.logging.Logger;
 public class Config {
 
     /**
-     * Amount of cards that makes a set
-     */
-    public final int SetSize = 3;
-    /**
      * Random spin cycles for Config::randomSpin (for debugging / testing)
      */
     public final long randomSpinMin;
@@ -214,6 +210,7 @@ public class Config {
         penaltyFreezeMillis = (long) (Double.parseDouble(properties.getProperty("PenaltyFreezeSeconds", "5")) * 1000.0);
         tableDelayMillis = (long) (Double.parseDouble(properties.getProperty("TableDelaySeconds", "0.1")) * 1000.0);
         endGamePauseMillies = (long) (Double.parseDouble(properties.getProperty("EndGamePauseSeconds", "5")) * 1000.0);
+        //betweenUpdatesMillies = (long) (Double.parseDouble(properties.getProperty("betweenUpdatesSeconds", "1")) * 1000.0);
 
         // ui settings
         String[] names = properties.getProperty("PlayerNames", "Player 1, Player 2").split(",");

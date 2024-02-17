@@ -12,13 +12,17 @@ with a short description of:
 
 1. Fully supporting all configuration fields and avoiding the use of magic numbers
 
-We are not entitled to this bonus.
+1. We used only the config final fields given by the config file.
+2. Across all of the project, specifically in Table and Dealer classes
+3. We Used unit tests AND Manual tests(we chagne the configuration file values and saw how the game changed accordingly).
 
 --------------------
 
 2. Terminating all threads (that you created) gracefully and in reverse order to the order they were created in.
 
-We are not entitled to this bonus.
+1. The terminate function of the Dealer firstly calls the terminate function of the players, the players timer threads and main timer run functions stops (while condition(time > 0) is false and then the thread stop and termintae automaticaly). 
+2. Dealer class(terminate),player class(terminate).
+3.We printed every time a thread is terminated an saw the order and checked the logger .
 
 --------------------
 
@@ -27,7 +31,9 @@ config.turnTimeoutMillis < 0: display nothing.
 config.turnTimeoutMillis = 0: display a timer since the last action (reshuffle or set collected).
 Note: in modes without a countdown timer the dealer must ensure there is always at least one legal set on the table.
 
-We are not entitled to this bonus.
+1.We created a class TIMER, that implements runnable. The run method while condition is time > 0. when time reaches zero, notifys the dealer. the reset time function reset the time value to config.turnTimeoutMillis.
+2. The main timer was used in the Dealer class
+3. We manauly set config.turnTimeoutMillis value and saw the Thread display accordingly.
 
 --------------------
 
