@@ -17,10 +17,14 @@ public class PlayerTimer implements Runnable{
      * The amount of time to set
      */
     private long time;
+
+    /**
+     * The player that holds the timer
+     */
     private Player player;
 
     /**
-     *
+     * Constructor
      * @param playerNumber
      * @param env
      * @param time
@@ -43,7 +47,7 @@ public class PlayerTimer implements Runnable{
                 time -= 1000;
                 env.ui.setFreeze(playerNumber, time);
             }
-        this.player.releaseFreeze();
-
+        this.player.releaseFreeze(); // release player lock at the end of the time
+        //System.out.println("thread " + Thread.currentThread().getName() + "terminated");
     }
 }

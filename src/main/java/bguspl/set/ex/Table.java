@@ -28,6 +28,11 @@ public class Table {
     protected final Integer[] cardToSlot; // slot per card (if any)
 
     /**
+     * Amount of cards that makes a set
+     */
+    public final int SetSize = 3;
+
+    /**
      * Array that represents Players's token choices
      */
     protected LinkedList<Integer>[] playersTokens;
@@ -129,12 +134,13 @@ public class Table {
         }
         env.ui.removeTokens(slot);
 
-        int card = slotToCard[slot];
-        cardToSlot[card] = null;
-        slotToCard[slot] = null;
+        if (slotToCard[slot]!=null) {
+            int card = slotToCard[slot];
+            cardToSlot[card] = null;
+            slotToCard[slot] = null;
 
-        env.ui.removeCard(slot);
-
+            env.ui.removeCard(slot);
+        }
     }
 
     /**
@@ -144,14 +150,15 @@ public class Table {
      */
     public synchronized void placeToken(int player, int slot) {
         // TODO implement
-        if (playersTokens[player].size() < env.config.SetSize) {
+        if (playersTokens[player].size() < this.SetSize) {
             playersTokens[player].add(slot);
             env.ui.placeToken(player, slot);
         }
 
+
         if (tokenAmountForSet(player)) {
-            this.checkedList.add(player);
-            notify();
+            this.checkedList.add(player); //Adds the player to the queue of the players need to be checked
+            notify(); //Notify the dealer to check the chosen cards
         }
     }
 
@@ -199,22 +206,36 @@ public class Table {
     {
         return playersTokens;
     }
-    public boolean tokenAmountForSet(int player){return playersTokens[player].size() == env.config.SetSize;}
+    public boolean tokenAmountForSet(int player){return playersTokens[player].size() == this.SetSize;}
 
-    //??synchronized
+    /**
+     *  The function converts slot pick into token action
+     * @param player - player's id
+     * @param slot - the chosen slot
+     */
     public void actionToToken(int player,int slot)
     {
-        if (playersTokens[player].contains(slot))
-            removeToken(player,slot);
-        else
-            placeToken(player,slot);
-
+        if (slotToCard[slot] != null){//if a card is located at this slot
+            if (playersTokens[player].contains(slot))
+                removeToken(player, slot);
+            else
+                placeToken(player, slot);
+        }
     }
+
+    /**
+     * the function reset the countdown and notifys the dealer
+     * @param timeout - if the main counddown should be reset
+     */
     public synchronized void setTimeOut(boolean timeout)
     {
         this.timeout = timeout;
-        notify();
+        notify(); // notifys dealer
     }
+
+    /**
+     * Dealer waits between round time or if he needs to check optional cards
+     */
     public synchronized void dealerWaits()
     {
         while (this.checkedList.isEmpty() & !(this.timeout))

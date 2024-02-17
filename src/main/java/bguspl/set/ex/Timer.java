@@ -15,6 +15,12 @@ public class Timer implements Runnable{
      */
     private long time;
 
+    /**
+     * Constructor
+     * @param time
+     * @param env
+     * @param table
+     */
     public Timer(long time,Env env,Table table)
     {
         this.time = time;
@@ -33,9 +39,13 @@ public class Timer implements Runnable{
                     env.ui.setCountdown(time,false);
             }
 
-            this.table.setTimeOut(true);
+            this.table.setTimeOut(true); // at the end of the round - time out - > new round
+        //System.out.println("thread " + Thread.currentThread().getName() + "terminated");
     }
 
+    /**
+     * The function reset the time value to default (round time)
+     */
     public void resetTime()
     {
         this.time = env.config.turnTimeoutMillis;
