@@ -101,6 +101,9 @@ public class Dealer implements Runnable {
      */
     public void terminate() {
         // TODO implement
+        for (Player p: players) {
+            p.terminate();
+        }
         this.terminate = true;
     }
 
@@ -123,7 +126,10 @@ public class Dealer implements Runnable {
         LinkedList<Integer>[] playerTokens = this.table.playersTokens;
         //convert tokens choices to cards
         while (!table.checkedList.isEmpty()) {
+
             int playerIndex = table.checkedList.remove();
+            players[playerIndex].freezePlayer();
+
             LinkedList<Integer> tokens = new LinkedList<Integer>(playerTokens[playerIndex]);
 
             int[] cards = new int[env.config.SetSize];
@@ -137,16 +143,16 @@ public class Dealer implements Runnable {
 
             if (isASet) {
                 this.players[playerIndex].point();
-                timer.resetTime();
                 for (Integer slot : tokens) {
                     this.table.removeCard(slot);
                 }
-
                 updateTimerDisplay(true);
 
             } else {
                 this.players[playerIndex].penalty();
+                try{Thread.sleep(1000);}catch(InterruptedException ignored){}
                 this.table.clearAllTokensPenalty(playerIndex);
+
             }
             table.checkedList.remove(playerIndex);
 
@@ -160,13 +166,20 @@ public class Dealer implements Runnable {
         // TODO implement
             //place the remaining card from the deck to the table
             Collections.shuffle(deck);
+        for (Player p:players) {
+            p.freezePlayer();
+        }
             for (int i = 0; i < table.slotToCard.length; i++) {
                 if (this.table.slotToCard[i] == null) {
                     int card = deck.remove(0);
                     this.table.placeCard(card, i);
                 }
             }
+
+        for (Player p:players) {
+            p.releaseFreeze();
         }
+    }
 
 
     /**
@@ -190,9 +203,18 @@ public class Dealer implements Runnable {
      */
     private void removeAllCardsFromTable() {
         // TODO implement
+
+        for (Player p:players) {
+            p.freezePlayer();
+        }
+
         for (int i = 0; i < this.table.slotToCard.length; i++)
             this.table.removeCard(i);
         updateTimerDisplay(true);
+
+        for (Player p:players) {
+            p.releaseFreeze();
+        }
     }
 
     /**

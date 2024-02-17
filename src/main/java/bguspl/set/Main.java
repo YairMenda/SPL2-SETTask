@@ -107,7 +107,7 @@ public class Main {
     public static void setLoggerLevelAndFormat(Logger logger, Level level, String format) {
         Handler[] handlers = logger.getHandlers();
         if (handlers != null) Arrays.stream(handlers).forEach(h -> h.setFormatter(new SimpleFormatter() {
-            // default format (with timestamp)  = "[%1$tF %1$tT] [%2$-7s] %3$s%n";
+            // default format (with timestamp)  = " [%1$tF %1$tT] [%2$-7s] %3$s%n";
             @Override
             public synchronized String format(LogRecord lr) {
                 return String.format(format, new Date(lr.getMillis()),

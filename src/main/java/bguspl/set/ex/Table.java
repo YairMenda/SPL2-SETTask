@@ -144,7 +144,7 @@ public class Table {
      */
     public synchronized void placeToken(int player, int slot) {
         // TODO implement
-        if (playersTokens[player].size() < 3) {
+        if (playersTokens[player].size() < env.config.SetSize) {
             playersTokens[player].add(slot);
             env.ui.placeToken(player, slot);
         }
@@ -217,9 +217,9 @@ public class Table {
     }
     public synchronized void dealerWaits()
     {
-        while (this.checkedList.isEmpty() & !(this.timeout) )
+        while (this.checkedList.isEmpty() & !(this.timeout))
             try{
-                wait(env.config.turnTimeoutMillis);
+                wait();
             }catch (InterruptedException ignored){}
 
     }
