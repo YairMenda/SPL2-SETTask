@@ -30,7 +30,7 @@ public class Table {
     /**
      * Amount of cards that makes a set
      */
-    public final int SetSize = 3;
+    public int SetSize;
 
     /**
      * Array that represents Players's token choices
@@ -57,11 +57,11 @@ public class Table {
         this.env = env;
         this.slotToCard = slotToCard;
         this.cardToSlot = cardToSlot;
+        this.SetSize = env.config.featureSize;
         this.playersTokens = new LinkedList[env.config.players];
         for (int i = 0; i < playersTokens.length; i++) {
             this.playersTokens[i] = new LinkedList<Integer>();
         }
-
         this.checkedList = new PriorityQueue<Integer>();
     }
 

@@ -33,7 +33,7 @@ public class Timer implements Runnable{
             {
                 try{Thread.sleep(1000);}catch (InterruptedException ignored){}
                 time-=1000;
-                if (time <= 5000)
+                if (time <= env.config.turnTimeoutWarningMillis)
                     env.ui.setCountdown(time,true);
                 else
                     env.ui.setCountdown(time,false);
