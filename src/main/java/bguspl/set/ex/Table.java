@@ -193,10 +193,11 @@ public class Table {
      */
     public void clearAllTokensPenalty(int player)
     {
-        for (Integer slot: playersTokens[player]) {
-            env.ui.removeToken(player,slot);
-        }
-        playersTokens[player].clear();
+//        for (Integer slot: playersTokens[player]) {
+//            env.ui.removeToken(player,slot);
+//        }
+//        playersTokens[player].clear();
+        env.ui.removeToken(player,playersTokens[player].removeLast());
     }
 
     /**
