@@ -39,6 +39,7 @@ public class PlayerTimer implements Runnable{
     }
     public void run()
     {
+        env.ui.setFreeze(playerNumber, time);
         while (time > 0) {
                 try {
                     Thread.sleep(1000);
