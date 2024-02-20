@@ -51,4 +51,12 @@ public class Timer implements Runnable{
         this.time = env.config.turnTimeoutMillis;
         this.table.setTimeOut(false);
     }
+
+    /**
+     * The function set the time value to zero - stoping the run function - > stops the thread activation
+     */
+    public void terminate()
+    {
+        this.time = 0;
+    }
 }
