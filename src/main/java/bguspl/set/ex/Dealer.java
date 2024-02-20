@@ -119,6 +119,7 @@ public class Dealer implements Runnable {
         for (Player p: players) {
             p.terminate();
         }
+        this.timer.terminate(); //terminate the time thread
         this.terminate = true;
     }
 
