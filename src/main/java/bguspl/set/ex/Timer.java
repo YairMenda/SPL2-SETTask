@@ -29,6 +29,7 @@ public class Timer implements Runnable{
     }
     public void run()
     {
+            env.ui.setCountdown(time,false);
             while (time > 0)
             {
                 try{Thread.sleep(1000);}catch (InterruptedException ignored){}

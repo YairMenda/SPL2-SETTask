@@ -149,7 +149,7 @@ public class Player implements Runnable {
      * @param slot - the slot corresponding to the key pressed.
      */
     public void keyPressed(int slot) {
-        if (!table.tokenAmountForSet(id) & actions.size() < this.table.SetSize & !isFreezed() & slot < this.table.countCards())
+        if (actions.size() < this.table.SetSize & !isFreezed() & slot < this.table.countCards())
             actions.add(slot);
     }
 

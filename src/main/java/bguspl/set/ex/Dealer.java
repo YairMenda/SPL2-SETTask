@@ -80,14 +80,14 @@ public class Dealer implements Runnable {
         while (!shouldFinish()) {
             placeCardsOnTable();
 
+            //start main countdown timer thread
+            Thread maintimer = new Thread(this.timer);
+            maintimer.start();
+
             //Release players logistic lock
             for (Player p:players) {
                 p.logisticFreeze(false);
             }
-
-            //start main countdown timer thread
-            Thread maintimer = new Thread(this.timer);
-            maintimer.start();
 
             updateTimerDisplay(true);
             timerLoop();
@@ -167,8 +167,6 @@ public class Dealer implements Runnable {
             } else {
                 this.players[playerIndex].penalty();
                 try{Thread.sleep(1000);}catch(InterruptedException ignored){}
-                this.table.clearAllTokensPenalty(playerIndex);
-
             }
             table.checkedList.remove(playerIndex);//remove player from the need to be checked list
 

@@ -153,12 +153,11 @@ public class Table {
         if (playersTokens[player].size() < this.SetSize) {
             playersTokens[player].add(slot);
             env.ui.placeToken(player, slot);
-        }
 
-
-        if (tokenAmountForSet(player)) {
-            this.checkedList.add(player); //Adds the player to the queue of the players need to be checked
-            notify(); //Notify the dealer to check the chosen cards
+            if (tokenAmountForSet(player)) {
+                this.checkedList.add(player); //Adds the player to the queue of the players need to be checked
+                notify(); //Notify the dealer to check the chosen cards
+            }
         }
     }
 
@@ -185,19 +184,6 @@ public class Table {
     public int convertToCard(int slot)
     {
         return  slotToCard[slot];
-    }
-
-    /**
-     * Clear player's tokens list
-     * @param player - int, the player that got a penalty
-     */
-    public void clearAllTokensPenalty(int player)
-    {
-//        for (Integer slot: playersTokens[player]) {
-//            env.ui.removeToken(player,slot);
-//        }
-//        playersTokens[player].clear();
-        env.ui.removeToken(player,playersTokens[player].removeLast());
     }
 
     /**
