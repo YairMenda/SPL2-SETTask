@@ -120,7 +120,7 @@ public class Player implements Runnable {
 
             while (!terminate) {
                 // TODO implement player key press simulator
-                int randomKeyPressed = rnd.nextInt(Math.max(1,this.table.countCards())); // generates slot pick
+                int randomKeyPressed = rnd.nextInt(0,12); // generates slot pick
                 keyPressed(randomKeyPressed);
 
                 if (!actions.isEmpty() & !isFreezed() & this.table.countCards()>0)
