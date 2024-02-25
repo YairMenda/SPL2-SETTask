@@ -120,10 +120,10 @@ public class Player implements Runnable {
 
             while (!terminate) {
                 // TODO implement player key press simulator
-                int randomKeyPressed = rnd.nextInt(0,12); // generates slot pick
+                int randomKeyPressed = rnd.nextInt(0,env.config.rows * env.config.columns); // generates slot pick
                 keyPressed(randomKeyPressed);
 
-                if (!actions.isEmpty() & !isFreezed() & this.table.countCards()>0)
+                if (!actions.isEmpty() & !isFreezed())
                     this.table.actionToToken(id, actions.remove());
 
                 try {
@@ -168,7 +168,6 @@ public class Player implements Runnable {
         env.ui.setScore(id, score);
         Thread timerThread = new Thread(new PlayerTimer(id,env,env.config.pointFreezeMillis,this));
         timerThread.start(); // start the point countdown timer thread
-
     }
 
     /**

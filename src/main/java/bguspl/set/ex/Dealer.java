@@ -144,32 +144,31 @@ public class Dealer implements Runnable {
         while (!table.checkedList.isEmpty()) {
 
             int playerIndex = table.checkedList.remove();
-            players[playerIndex].freezePlayer(); // lock players -  until the dealer decides -> point / penalty
 
-            LinkedList<Integer> tokens = new LinkedList<Integer>(playerTokens[playerIndex]);
+            if (playerTokens[playerIndex].size()  == env.config.featureSize) {
+                players[playerIndex].freezePlayer(); // lock players -  until the dealer decides -> point / penalty
 
-            int[] cards = new int[this.table.SetSize];
-            int j = 0;
-            for (Integer slot : tokens) {
-                cards[j] = table.convertToCard(slot);
-                j++;
-            }
-
-            boolean isASet = env.util.testSet(cards); // check if player choice is a set
-
-            if (isASet) {
-                this.players[playerIndex].point();
+                LinkedList<Integer> tokens = new LinkedList<Integer>(playerTokens[playerIndex]);
+                int[] cards = new int[this.table.SetSize];
+                int j = 0;
                 for (Integer slot : tokens) {
-                    this.table.removeCard(slot);
+                    cards[j] = table.convertToCard(slot);
+                    j++;
                 }
-                updateTimerDisplay(true);
 
-            } else {
-                this.players[playerIndex].penalty();
-                try{Thread.sleep(1000);}catch(InterruptedException ignored){}
+                boolean isASet = env.util.testSet(cards); // check if player choice is a set
+
+                if (isASet) {
+                    this.players[playerIndex].point();
+                    for (Integer slot : tokens) {
+                        this.table.removeCard(slot);
+                    }
+                    updateTimerDisplay(true);
+
+                } else {
+                    this.players[playerIndex].penalty();
+                }
             }
-            table.checkedList.remove(playerIndex);//remove player from the need to be checked list
-
         }
     }
 

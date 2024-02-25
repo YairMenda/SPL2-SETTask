@@ -3,6 +3,7 @@ package bguspl.set.ex;
 import bguspl.set.Env;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
 /**
@@ -62,7 +63,7 @@ public class Table {
         for (int i = 0; i < playersTokens.length; i++) {
             this.playersTokens[i] = new LinkedList<Integer>();
         }
-        this.checkedList = new PriorityQueue<Integer>();
+        this.checkedList = new ConcurrentLinkedQueue<Integer>();
     }
 
     /**
@@ -148,15 +149,17 @@ public class Table {
      * @param player - the player the token belongs to.
      * @param slot   - the slot on which to place the token.
      */
-    public synchronized void placeToken(int player, int slot) {
+    public void placeToken(int player, int slot) {
         // TODO implement
         if (playersTokens[player].size() < this.SetSize) {
             playersTokens[player].add(slot);
             env.ui.placeToken(player, slot);
 
             if (tokenAmountForSet(player)) {
-                this.checkedList.add(player); //Adds the player to the queue of the players need to be checked
-                notify(); //Notify the dealer to check the chosen cards
+                synchronized (this) {
+                    this.checkedList.add(player); //Adds the player to the queue of the players need to be checked
+                    notify(); //Notify the dealer to check the chosen cards
+                }
             }
         }
     }
@@ -202,7 +205,7 @@ public class Table {
      */
     public void actionToToken(int player,int slot)
     {
-        if (slotToCard[slot] != null){//if a card is located at this slot
+        if (slotToCard[slot] != null & !this.checkedList.contains(player)){//if a card is located at this slot
             if (playersTokens[player].contains(slot))
                 removeToken(player, slot);
             else
