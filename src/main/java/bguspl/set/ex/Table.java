@@ -46,6 +46,7 @@ public class Table {
      * Queue of players to be checked by the dealer for possible set
      */
     public Queue<Integer> checkedList;
+
     /**
      * Constructor for testing.
      *
@@ -68,6 +69,7 @@ public class Table {
 
     /**
      * Constructor for actual usage.
+     *
      * @param env - the game environment objects.
      */
     public Table(Env env) {
@@ -103,31 +105,34 @@ public class Table {
 
     /**
      * Places a card on the table in a grid slot.
+     *
      * @param card - the card id to place in the slot.
      * @param slot - the slot in which the card should be placed.
-     *
      * @post - the card placed is on the table, in the assigned slot.
      */
     public synchronized void placeCard(int card, int slot) {
         try {
             Thread.sleep(env.config.tableDelayMillis);
-        } catch (InterruptedException ignored) {}
+        } catch (InterruptedException ignored) {
+        }
 
         cardToSlot[card] = slot;
         slotToCard[slot] = card;
 
         // TODO implement
-        env.ui.placeCard(card,slot);
+        env.ui.placeCard(card, slot);
     }
 
     /**
      * Removes a card from a grid slot on the table.
+     *
      * @param slot - the slot from which to remove the card.
      */
     public synchronized void removeCard(int slot) {
         try {
             Thread.sleep(env.config.tableDelayMillis);
-        } catch (InterruptedException ignored) {}
+        } catch (InterruptedException ignored) {
+        }
 
         // TODO implement
         for (int i = 0; i < playersTokens.length; i++) {
@@ -135,7 +140,7 @@ public class Table {
         }
         env.ui.removeTokens(slot);
 
-        if (slotToCard[slot]!=null) {
+        if (slotToCard[slot] != null) {
             int card = slotToCard[slot];
             cardToSlot[card] = null;
             slotToCard[slot] = null;
@@ -146,6 +151,7 @@ public class Table {
 
     /**
      * Places a player token on a grid slot.
+     *
      * @param player - the player the token belongs to.
      * @param slot   - the slot on which to place the token.
      */
@@ -166,46 +172,49 @@ public class Table {
 
     /**
      * Removes a token of a player from a grid slot.
+     *
      * @param player - the player the token belongs to.
      * @param slot   - the slot from which to remove the token.
-     * @return       - true iff a token was successfully removed.
+     * @return - true iff a token was successfully removed.
      */
     public boolean removeToken(int player, int slot) {
         // TODO implement
-        playersTokens[player].remove((Integer)slot);
-        env.ui.removeToken(player,slot);
+        playersTokens[player].remove((Integer) slot);
+        env.ui.removeToken(player, slot);
         return true;
 
     }
 
     /**
      * Convert slot to a card
+     *
      * @param slot - the slot we want to convert
      * @return - int, the related card
-     *assumes slot is legal
+     * assumes slot is legal
      */
-    public int convertToCard(int slot)
-    {
-        return  slotToCard[slot];
+    public int convertToCard(int slot) {
+        return slotToCard[slot];
     }
 
     /**
      * The function returns the token choices of the players
      */
-    public LinkedList<Integer>[] GetPlayerTokens()
-    {
+    public LinkedList<Integer>[] GetPlayerTokens() {
         return playersTokens;
     }
-    public boolean tokenAmountForSet(int player){return playersTokens[player].size() == this.SetSize;}
+
+    public boolean tokenAmountForSet(int player) {
+        return playersTokens[player].size() == this.SetSize;
+    }
 
     /**
-     *  The function converts slot pick into token action
+     * The function converts slot pick into token action
+     *
      * @param player - player's id
-     * @param slot - the chosen slot
+     * @param slot   - the chosen slot
      */
-    public void actionToToken(int player,int slot)
-    {
-        if (slotToCard[slot] != null & !this.checkedList.contains(player)){//if a card is located at this slot
+    public void actionToToken(int player, int slot) {
+        if (slotToCard[slot] != null & !this.checkedList.contains(player)) {//if a card is located at this slot
             if (playersTokens[player].contains(slot))
                 removeToken(player, slot);
             else
@@ -215,10 +224,10 @@ public class Table {
 
     /**
      * the function reset the countdown and notifys the dealer
+     *
      * @param timeout - if the main counddown should be reset
      */
-    public synchronized void setTimeOut(boolean timeout)
-    {
+    public synchronized void setTimeOut(boolean timeout) {
         this.timeout = timeout;
         notify(); // notifys dealer
     }
@@ -226,13 +235,47 @@ public class Table {
     /**
      * Dealer waits between round time or if he needs to check optional cards
      */
-    public synchronized void dealerWaits()
-    {
+    public synchronized void dealerWaits() {
         while (this.checkedList.isEmpty() & !(this.timeout))
-            try{
+            try {
                 wait();
-            }catch (InterruptedException ignored){}
+            } catch (InterruptedException ignored) {
+            }
 
+    }
+
+    /**
+     * Removes a card from a grid slot on the table.
+     *
+     * @param slot - the slot from which to remove the card.
+     */
+    public synchronized List<Integer> removeCardToDeck() {
+
+        List<Integer> remainingCards = new LinkedList<Integer>();
+
+        for (int i = 0; i < slotToCard.length; i++) {
+            if (slotToCard[i] != null) {
+                try {
+                    Thread.sleep(env.config.tableDelayMillis);
+                } catch (InterruptedException ignored) {
+                }
+
+                for (int j = 0; j < playersTokens.length; j++) {
+                    playersTokens[j].remove((Integer) i);
+                }
+                env.ui.removeTokens(i);
+
+                int card = slotToCard[i];
+                remainingCards.add(card);
+                cardToSlot[card] = null;
+                slotToCard[i] = null;
+
+                env.ui.removeCard(i);
+
+            }
+        }
+
+        return remainingCards;
     }
 }
 

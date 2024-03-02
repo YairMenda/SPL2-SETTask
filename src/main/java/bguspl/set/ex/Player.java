@@ -113,7 +113,7 @@ public class Player implements Runnable {
 
         if (!human) try { aiThread.join(); } catch (InterruptedException ignored) {}
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
-        //System.out.println("thread " + Thread.currentThread().getName() + "terminated");
+        System.out.println("thread " + Thread.currentThread().getName() + "terminated");
     }
 
     /**
@@ -142,20 +142,27 @@ public class Player implements Runnable {
                         this.table.actionToToken(id, actions.remove());
 
                     try {
-                         synchronized (this) { wait(500); }//Delay between Ai presses
+                         synchronized (this) { wait(100); }//Delay between Ai presses
                         } catch (InterruptedException ignored) {}
             }}
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
         aiThread.start();
+
     }
 
     /**
      * Called when the game should be terminated.
      */
     public void terminate() {
-
         terminate = true;
+
+        if (!human) {
+            this.aiThread.interrupt();
+        }
+        try{
+        this.playerThread.join();}catch (InterruptedException ignored){}
+        this.playerThread.interrupt();
     }
 
     /**
