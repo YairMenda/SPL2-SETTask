@@ -46,6 +46,10 @@ public class Dealer implements Runnable {
      */
     private long reshuffleTime = Long.MAX_VALUE;
 
+    /**
+     * Timer Thread
+     */
+    private Thread maintimer;
 
     /**
      * Constructor
@@ -58,7 +62,8 @@ public class Dealer implements Runnable {
         this.table = table;
         this.players = players;
         deck = IntStream.range(0,env.config.deckSize).boxed().collect(Collectors.toList());
-        this.timer = new Timer(env.config.turnTimeoutMillis,this.env,table);
+        this.timer = new Timer(this.env,table);
+        maintimer = new Thread(this.timer);
 
     }
 
@@ -76,26 +81,32 @@ public class Dealer implements Runnable {
             player.start();
         }
 
+
+        //start main countdown timer thread
+        maintimer.start();
+
         //run until the game is over
         while (!shouldFinish()) {
             placeCardsOnTable();
 
-            //start main countdown timer thread
-            Thread maintimer = new Thread(this.timer);
-            maintimer.start();
+            try{Thread.sleep(500);}catch (InterruptedException ignored){}
+
+            updateTimerDisplay(true);
 
             //Release players logistic lock
             for (Player p:players) {
                 p.logisticFreeze(false);
             }
 
-            updateTimerDisplay(true);
             timerLoop();
             updateTimerDisplay(false);
             removeAllCardsFromTable();
         }
+
         announceWinners();
+        shutDownThreads();
         env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
+        System.out.println("Dealer terminated");
         //System.out.println("thread " + Thread.currentThread().getName() + "terminated");
     }
 
@@ -116,13 +127,27 @@ public class Dealer implements Runnable {
      */
     public void terminate() {
         // TODO implement
-        for (Player p: players) {
-            p.terminate();
-        }
-        this.timer.terminate(); //terminate the time thread
         this.terminate = true;
     }
 
+    /**
+     * The function shuts down all the threads
+     */
+    public void shutDownThreads()
+    {
+        this.timer.terminate(); //terminate the time thread
+        this.maintimer.interrupt();
+        try {
+            this.maintimer.join();
+        }catch (InterruptedException ignored){}
+
+        //try{Thread.sleep(300);}catch (InterruptedException ignored){}
+
+        for (Player p: players) {
+            p.terminate();
+        }
+
+    }
     /**
      * Check if the game should be terminated or the game end conditions are met.
      *
@@ -220,10 +245,8 @@ public class Dealer implements Runnable {
             p.logisticFreeze(true); // lock players while removing all cards
         }
 
-        //removing all cards from table
-        for (int i = 0; i < this.table.slotToCard.length; i++)
-            this.table.removeCard(i);
-        updateTimerDisplay(true);
+        List<Integer> cardsToDeck = this.table.removeCardToDeck();
+        deck.addAll(cardsToDeck);
 
     }
 
@@ -248,8 +271,6 @@ public class Dealer implements Runnable {
         int[] arr = new int[winners.size()];
         for (int i=0; i < arr.length; i++)
             arr[i] = (int) winners.get(i);
-
-        terminate();// terminate all threads
 
         env.ui.announceWinner(arr);
     }

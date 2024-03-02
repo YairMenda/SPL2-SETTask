@@ -16,48 +16,63 @@ public class Timer implements Runnable{
     private long time;
 
     /**
+     * The timer should stop
+     */
+    private boolean terminate;
+
+    /**
      * Constructor
-     * @param time
      * @param env
      * @param table
      */
-    public Timer(long time,Env env,Table table)
+    public Timer(Env env,Table table)
     {
-        this.time = time;
+        this.terminate = false;
+        this.time = -1;
         this.env = env;
         this.table = table;
     }
-    public void run()
-    {
-            env.ui.setCountdown(time,false);
-            while (time > 0)
-            {
-                try{Thread.sleep(1000);}catch (InterruptedException ignored){}
-                time-=1000;
+    public void run() {
+        while (!terminate){
+            if (time != -1) {
                 if (time <= env.config.turnTimeoutWarningMillis)
-                    env.ui.setCountdown(time,true);
+                    env.ui.setCountdown(time, true);
                 else
-                    env.ui.setCountdown(time,false);
+                    env.ui.setCountdown(time, false);
             }
 
-            this.table.setTimeOut(true); // at the end of the round - time out - > new round
-        //System.out.println("thread " + Thread.currentThread().getName() + "terminated");
+            if (time > 0) {
+                try {
+                    time -= 1000;
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignored) {
+                }
+
+            } else {
+                try {
+                    this.table.setTimeOut(true); // at the end of the round - time out - > new round
+                    synchronized (this) {
+                        wait();
+                    }
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
+        System.out.println("Timer Thread terminated");
     }
 
     /**
      * The function reset the time value to default (round time)
      */
-    public void resetTime()
+    public synchronized void resetTime()
     {
         this.time = env.config.turnTimeoutMillis;
         this.table.setTimeOut(false);
+        notify();
     }
 
-    /**
-     * The function set the time value to zero - stoping the run function - > stops the thread activation
-     */
     public void terminate()
     {
-        this.time = 0;
+        this.terminate = true;
     }
 }
