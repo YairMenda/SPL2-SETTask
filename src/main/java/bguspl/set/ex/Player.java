@@ -62,7 +62,7 @@ public class Player implements Runnable {
     /**
      * Boolean value - If the player is freezed and cannot do anything becouse of a penalty
      */
-    private boolean penaltyFreeze;
+    private long penaltyFreeze;
     /**
      * Boolean value - If the player is freezed and cannot do anything becouse of a logitic action of the dealer
      */
@@ -82,7 +82,7 @@ public class Player implements Runnable {
         this.id = id;
         this.human = human;
         this.actions = new PriorityQueue<Integer>();
-        this.penaltyFreeze = false;
+        this.penaltyFreeze = 0;
         this.logisticFreeze = true;
     }
 
@@ -97,9 +97,17 @@ public class Player implements Runnable {
 
         else {
             while (!terminate) {
-                if (!actions.isEmpty() & !isFreezed()) {
-                    this.table.actionToToken(id, actions.remove());
-                }
+                if (penaltyFreeze > 0){
+                    try {
+                        env.ui.setFreeze(id,penaltyFreeze);
+                        synchronized (this) { wait(1000);
+                        penaltyFreeze= penaltyFreeze-1000;}
+                    } catch (InterruptedException ignored) {}}
+                else{
+                    env.ui.setFreeze(id,penaltyFreeze);
+                    if (!actions.isEmpty() & !isFreezed()) {
+                        this.table.actionToToken(id, actions.remove());
+                }}
             }
         }
 
@@ -120,16 +128,23 @@ public class Player implements Runnable {
 
             while (!terminate) {
                 // TODO implement player key press simulator
-                int randomKeyPressed = rnd.nextInt(0,env.config.rows * env.config.columns); // generates slot pick
-                keyPressed(randomKeyPressed);
+                if (penaltyFreeze > 0){
+                    try {
+                        env.ui.setFreeze(id,penaltyFreeze);
+                        synchronized (this) { wait(1000);
+                            penaltyFreeze= penaltyFreeze-1000;}
+                    } catch (InterruptedException ignored) {}}
+                else {
+                    env.ui.setFreeze(id,penaltyFreeze);
+                    int randomKeyPressed = rnd.nextInt(0,env.config.rows * env.config.columns); // generates slot pick
+                    keyPressed(randomKeyPressed);
+                    if (!actions.isEmpty() & !isFreezed())
+                        this.table.actionToToken(id, actions.remove());
 
-                if (!actions.isEmpty() & !isFreezed())
-                    this.table.actionToToken(id, actions.remove());
-
-                try {
-                    synchronized (this) { wait(1000); }//Delay between Ai presses
-                } catch (InterruptedException ignored) {}
-            }
+                    try {
+                         synchronized (this) { wait(500); }//Delay between Ai presses
+                        } catch (InterruptedException ignored) {}
+            }}
             env.logger.info("thread " + Thread.currentThread().getName() + " terminated.");
         }, "computer-" + id);
         aiThread.start();
@@ -166,8 +181,7 @@ public class Player implements Runnable {
 
         this.score++;
         env.ui.setScore(id, score);
-        Thread timerThread = new Thread(new PlayerTimer(id,env,env.config.pointFreezeMillis,this));
-        timerThread.start(); // start the point countdown timer thread
+        penaltyFreeze = env.config.pointFreezeMillis;
     }
 
     /**
@@ -175,29 +189,13 @@ public class Player implements Runnable {
      */
     public void penalty() {
         // TODO implement
-        Thread timerThread = new Thread(new PlayerTimer(id,env,env.config.penaltyFreezeMillis,this));
-        timerThread.start(); // start the penalty countdown timer thread
+        penaltyFreeze = env.config.penaltyFreezeMillis;
     }
 
     public int score() {
         return score;
     }
 
-    /**
-     * The function releases player at the end of penalty time
-     */
-    public void releaseFreeze()
-    {
-        this.penaltyFreeze = false;
-    }
-
-    /**
-     * The function freezes player as a result of a penalty given by the dealer
-     */
-    public void freezePlayer()
-    {
-        this.penaltyFreeze = true;
-    }
 
     /**
      * The function set the logistic lock state
@@ -211,7 +209,7 @@ public class Player implements Runnable {
      * @return If the player is completely free
      */
     public boolean isFreezed(){
-        return logisticFreeze || penaltyFreeze;
+        return logisticFreeze || penaltyFreeze > 0;
     }
 
 

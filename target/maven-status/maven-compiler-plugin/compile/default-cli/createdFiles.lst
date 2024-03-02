@@ -13,7 +13,6 @@ bguspl\set\ex\Dealer.class
 bguspl\set\UtilImpl.class
 bguspl\set\ex\Timer.class
 bguspl\set\Util.class
-bguspl\set\ex\PlayerTimer.class
 bguspl\set\WindowManager.class
 bguspl\set\Env.class
 bguspl\set\UserInterfaceSwing$GamePanel.class

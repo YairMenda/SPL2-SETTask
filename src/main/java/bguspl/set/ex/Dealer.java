@@ -143,10 +143,9 @@ public class Dealer implements Runnable {
         //convert tokens choices to cards
         while (!table.checkedList.isEmpty()) {
 
-            int playerIndex = table.checkedList.remove();
+            int playerIndex = table.checkedList.peek();
 
             if (playerTokens[playerIndex].size()  == env.config.featureSize) {
-                players[playerIndex].freezePlayer(); // lock players -  until the dealer decides -> point / penalty
 
                 LinkedList<Integer> tokens = new LinkedList<Integer>(playerTokens[playerIndex]);
                 int[] cards = new int[this.table.SetSize];
@@ -169,6 +168,7 @@ public class Dealer implements Runnable {
                     this.players[playerIndex].penalty();
                 }
             }
+            table.checkedList.remove();
         }
     }
 
